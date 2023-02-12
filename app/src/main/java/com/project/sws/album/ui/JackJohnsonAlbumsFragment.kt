@@ -17,6 +17,11 @@ import kotlinx.coroutines.launch
 class JackJohnsonAlbumsFragment : Fragment() {
     private val vm: AlbumViewModel by activityViewModels()
     private var binding: FragmentJackJohnsonAlbumsBinding? = null
+    private val showBookmarkedOnly: Boolean by lazy {
+        arguments?.takeIf { it.containsKey(SHOW_BOOKMARKED_ONLY) }
+            ?.getBoolean(SHOW_BOOKMARKED_ONLY)
+            ?: false
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return FragmentJackJohnsonAlbumsBinding.inflate(inflater, container, false).let {
@@ -45,9 +50,24 @@ class JackJohnsonAlbumsFragment : Fragment() {
 
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                vm.albums.collectLatest {
+                when (showBookmarkedOnly) {
+                    true -> vm.bookmarkedAlbums
+                    false -> vm.albums
+                }.collectLatest {
                     (binding?.rv?.adapter as AlbumAdapter?)?.submitList(it)
                 }
+            }
+        }
+    }
+
+    companion object {
+        private const val SHOW_BOOKMARKED_ONLY = "SHOW_BOOKMARKED_ONLY"
+        fun newInstance(showBookmarkedOnly: Boolean): JackJohnsonAlbumsFragment {
+            val args = Bundle().apply {
+                putBoolean(SHOW_BOOKMARKED_ONLY, showBookmarkedOnly)
+            }
+            return JackJohnsonAlbumsFragment().apply {
+                arguments = args
             }
         }
     }
